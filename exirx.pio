@@ -1,0 +1,78 @@
+.program exirx
+
+.wrap_target
+
+; Each EXI clock cycle at clk 101 is 9 cycles at 250mhz
+
+start:
+	wait 0 gpio 6
+	wait 1 gpio 6 [10] ;	First bit in command will alway be 1
+	jmp pin cmdcd [9] ;		0xC/D 11xx
+	jmp pin cmdab [7] ;		0xA/B 101x
+	jmp pin cmdid [12] ;	0x9   1001
+
+cmdab:
+	jmp pin cmdb ;			0xB   1011
+	jmp cswait   ;			0xA   1010
+
+cmdcd:
+	nop[6]
+cmdb:
+	nop[9]
+
+	in pins, 1
+	set pins 1 [5]
+	set pins 0
+
+	set y, 6
+bitloop:
+	in pins, 1
+	jmp y-- bitloop [9]
+
+cswait:
+	wait 1 gpio 5 [20] ;	CS
+.wrap
+
+cmdid:
+	set pins 1 [9]
+	set pins 0 [27]
+	set pins 1 [28]
+	set pins 0
+	jmp cswait
+
+% c-sdk {
+#include <hardware/clocks.h>
+
+static inline void exirx_program_init(PIO pio, uint sm, uint offset,
+		uint pindi, uint pindo, bool en) {
+
+	pio_gpio_init(pio, pindi);
+	pio_gpio_init(pio, pindo);
+
+	pio_sm_set_consecutive_pindirs(pio, sm, pindi, 1, false);
+	pio_sm_set_consecutive_pindirs(pio, sm, pindo, 1, true);
+
+	pio_sm_config c = exirx_program_get_default_config(offset);
+
+	sm_config_set_in_pins(&c, pindi);
+	sm_config_set_jmp_pin(&c, pindi);
+	sm_config_set_set_pins(&c, pindo, 1);
+
+	sm_config_set_clkdiv(&c, 1);
+
+	sm_config_set_in_shift(
+		&c,
+		false, // Shift-to-right = false (i.e. shift to left)
+		true,  // Autopush enabled
+		8      // Autopush threshold = 8
+	);
+
+	sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+    
+	pio_sm_init(pio, sm, offset, &c);
+	pio->input_sync_bypass = (1u<<pindi);
+	pio_sm_set_enabled(pio, sm, en);
+}
+
+%}
+
