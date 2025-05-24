@@ -16,6 +16,9 @@ Pinout
 | GPIO4 (Pin 6)          | CS |
 | GPIO5 (Pin 7)          | CLK |
 
+<img src="https://github.com/user-attachments/assets/f31dfe66-b884-448e-9230-c3edcb3adca5" width="224.75" height="379.75">
+<img src="https://github.com/user-attachments/assets/1fef3ac4-c165-4bba-9962-3b80aac4da0e" width="224.75" height="379.75">
+
 Credits
 -------
 Most of the C code comes from [8086net/pico-sexa-uart-bridge](https://github.com/8086net/pico-sexa-uart-bridge)
