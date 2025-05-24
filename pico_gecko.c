@@ -19,7 +19,7 @@
 #include "serial.h"
 
 #define PIN_DO   3
-#define PIN_DI   4
+#define PIN_DI   2
 
 #if !defined(MIN)
 #define MIN(a, b) ((a > b) ? b : a)

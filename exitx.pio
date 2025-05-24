@@ -1,7 +1,7 @@
 .program exitx
 
 start:
-	wait 1 gpio 6 [10] ;	First bit in command will alway be 1
+	wait 1 gpio 5 [10] ;	First bit in command will alway be 1
 	jmp pin cswait [17] ;	0xC/D 11xx and 0xA/B 101x
 	jmp pin cswait ;		0xB/9 1011/1001
 	set pins 1 [4] ;		0xA   1010
@@ -13,7 +13,7 @@ outloop:
 cswait:
 	set pins 0 [20]
 	pull
-	wait 1 gpio 5;	CS
+	wait 1 gpio 4;	CS
 
 % c-sdk {
 #include <hardware/clocks.h>

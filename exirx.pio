@@ -5,8 +5,8 @@
 ; Each EXI clock cycle at clk 101 is 9 cycles at 250mhz
 
 start:
-	wait 0 gpio 6
-	wait 1 gpio 6 [10] ;	First bit in command will alway be 1
+	wait 0 gpio 5
+	wait 1 gpio 5 [10] ;	First bit in command will alway be 1
 	jmp pin cmdcd [9] ;		0xC/D 11xx
 	jmp pin cmdab [7] ;		0xA/B 101x
 	jmp pin cmdid [12] ;	0x9   1001
@@ -30,7 +30,7 @@ bitloop:
 	jmp y-- bitloop [9]
 
 cswait:
-	wait 1 gpio 5 [20] ;	CS
+	wait 1 gpio 4 [20] ;	CS
 .wrap
 
 cmdid:

@@ -11,10 +11,10 @@ Pinout
 ------
 | Raspberry Pi Pico GPIO | Function |
 |:----------------------:|:--------:|
-| GPIO3 (Pin 5)          | DI / MISO |
-| GPIO4 (Pin 6)          | DO / MOSI |
-| GPIO5 (Pin 7)          | CS |
-| GPIO6 (Pin 9)          | CLK |
+| GPIO2 (Pin 4)          | DI / MOSI |
+| GPIO3 (Pin 5)          | DO / MISO |
+| GPIO4 (Pin 6)          | CS |
+| GPIO5 (Pin 7)          | CLK |
 
 Credits
 -------
