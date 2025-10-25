@@ -1,28 +1,33 @@
 .program exitx
 
 start:
-	wait 1 gpio 5 [10] ;	First bit in command will alway be 1
+	wait 1 gpio 5 [9] ;	First bit in command will alway be 1
 	jmp pin cswait [17] ;	0xC/D 11xx and 0xA/B 101x
-	jmp pin cswait ;		0xB/9 1011/1001
-	set pins 1 [4] ;		0xA   1010
-	set pins 0 [3]
-	set y, 7 [25]
+	jmp pin bcswait ;		0xB/9 1011/1001
+	set pins 1 [5] ;		0xA   1010
+	set pins 0 [15]
+	set y, 7 [14]
 outloop:
 	out pins, 1
 	jmp y-- outloop [9]
 cswait:
-	set pins 0 [20]
+	set pins 0 [6]
+	set pins 1 [12]
+	set pins 0
+bcswait:
 	pull
-	wait 1 gpio 4;	CS
+	wait 1 gpio 4 [31];	CS
 
 % c-sdk {
 #include <hardware/clocks.h>
 
 static inline void exitx_program_init(PIO pio, uint sm, uint offset,
-		uint pindi, uint pindo, bool en) {
+		uint pindi, uint pindo, uint pincs, uint pinclk, bool en) {
 
 	pio_gpio_init(pio, pindi);
 	pio_gpio_init(pio, pindo);
+	pio_gpio_init(pio, pincs);
+	pio_gpio_init(pio, pinclk);
 
 	pio_sm_set_consecutive_pindirs(pio, sm, pindi, 1, false);
 	pio_sm_set_consecutive_pindirs(pio, sm, pindo, 1, true);

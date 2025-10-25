@@ -18,8 +18,10 @@
 #include <exirx.pio.h>
 #include "serial.h"
 
-#define PIN_DO   3
 #define PIN_DI   2
+#define PIN_DO   3
+#define PIN_CS   4
+#define PIN_CLK   5
 
 #if !defined(MIN)
 #define MIN(a, b) ((a > b) ? b : a)
@@ -173,12 +175,14 @@ void uart_write_bytes() {
 		}
 		mutex_exit(&usb_mtx);
 	}
+#ifndef PICO_RP2350 // No idea why it doesn't work right on it
 	if (led_act_ticker) {
 		gpio_put(led_act_pin, 1);
 		led_act_ticker--;
 	} else {
 		gpio_put(led_act_pin, 0);
 	}
+#endif
 }
 
 void init_uart_data() {
@@ -213,8 +217,8 @@ void init_uart_data() {
 	led_act_ticker = 0;
 
 	// Set up the state machine we're going to use to for rx/tx
-	exirx_program_init(pio0, 0, rx_offset, PIN_DI, PIN_DO, true);
-	exitx_program_init(pio0, 1, tx_offset, PIN_DI, PIN_DO, true);
+	exirx_program_init(pio0, 0, rx_offset, PIN_DI, PIN_DO, PIN_CS, PIN_CLK, true);
+	exitx_program_init(pio0, 1, tx_offset, PIN_DI, PIN_DO, PIN_CS, PIN_CLK, true);
 }
 
 bool tud_vendor_control_complete_cb(uint8_t rhport, tusb_control_request_t const* request) {
