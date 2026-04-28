@@ -1,0 +1,30 @@
+.program exicd
+
+start:
+	wait gpio 8 ; 2nd bit of cmd
+	wait 1 gpio 5
+	wait 0 gpio 5
+	set pins 1 [9] ; TODO: Figure out how to clock this too
+	set pins 0
+
+
+% c-sdk {
+#include <hardware/clocks.h>
+
+static inline void exicd_program_init(PIO pio, uint sm, uint offset,
+		uint pindi, uint pindo, uint pincs, uint pinclk, bool en) {
+
+	pio_gpio_init(pio, pindo);
+	pio_sm_set_consecutive_pindirs(pio, sm, pindo, 1, true);
+
+	pio_sm_config c = exicd_program_get_default_config(offset);
+
+	sm_config_set_set_pins(&c, pindo, 1);
+
+	sm_config_set_clkdiv(&c, 1);
+
+	pio_sm_init(pio, sm, offset, &c);
+	pio_sm_set_enabled(pio, sm, en);
+}
+
+%}

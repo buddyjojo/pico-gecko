@@ -3,8 +3,7 @@ Raspberry Pi Pico based USB gecko clone
 
 Notes
 -----
-- Sending data to the gc/wii is currently very unreliable.
-- Only works with CLK set to the "101" frequency (all homebrew I've come across use this frequency) due to using delays instead of clocking in the data.
+- Only works with CLK set to the "101" frequency (all homebrew I've come across use this frequency).
 - Overclocks the rp2040 to 250mhz, most boards can handle this but some are [known to not](https://github.com/Noltari/pico-uart-bridge/issues/11#issuecomment-2048104347).
 
 Pinout

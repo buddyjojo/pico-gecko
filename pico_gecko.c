@@ -14,14 +14,24 @@
 #include <pico/stdlib.h>
 #include <string.h>
 #include <tusb.h>
+
 #include <exitx.pio.h>
 #include <exirx.pio.h>
+
+#include <exi9.pio.h>
+#include <exicd.pio.h>
+
+#include <command.pio.h>
+
 #include "serial.h"
 
 #define PIN_DI   2
 #define PIN_DO   3
 #define PIN_CS   4
-#define PIN_CLK   5
+#define PIN_CLK  5
+
+#define PIN_CMD   7
+
 
 #if !defined(MIN)
 #define MIN(a, b) ((a > b) ? b : a)
@@ -38,7 +48,8 @@
 #define DEF_PARITY 0
 #define DEF_DATA_BITS 8
 
-uint    sm = 0;
+uint    txsm = 0;
+uint    rxsm = 1;
 uint8_t led_act_pin = 25;
 
 cdc_line_coding_t usb_lc;
@@ -60,6 +71,12 @@ uint rxp_offset=0;
 
 uint tx_offset=0;
 uint txp_offset=0;
+
+uint exi9_offset=0;
+uint exicd_offset=0;
+
+uint command_offset=0;
+
 
 void usb_read_bytes() {
 	uint32_t len = tud_cdc_n_available(0);
@@ -126,14 +143,15 @@ void core1_entry(void)
 void uart_read_bytes()
 {
 
-	if (!pio_sm_is_rx_fifo_empty(pio0, sm)) {
-		while (!pio_sm_is_rx_fifo_empty(pio0, sm) &&
+	if (!pio_sm_is_rx_fifo_empty(pio0, rxsm)) {
+		while (!pio_sm_is_rx_fifo_empty(pio0, rxsm) &&
 				uart_rx_pos < BUFFER_SIZE) {
-			uart_rx_buffer[uart_rx_pos] =  pio_sm_get_blocking(pio0, sm);
+			uart_rx_buffer[uart_rx_pos] =  pio_sm_get_blocking(pio0, rxsm);
 			uart_rx_pos++;
 			led_act_ticker = LED_TICKER_COUNT;
 		}
 	}
+
 	// If we can get the uart mutex then copy the UART data to the uart USB sender, otherwise we'll get it next time around
 	if (mutex_try_enter(&uart_mtx, NULL)) {
 		// Ensure we don't overflow the uart_to_usb_buffer
@@ -160,12 +178,12 @@ void uart_write_bytes() {
 
 		led_act_ticker = LED_TICKER_COUNT;
 
-		size_t bufspace=7-pio_sm_get_tx_fifo_level(pio0,1);
+		size_t bufspace=7-pio_sm_get_tx_fifo_level(pio0, txsm);
 		size_t tosend=usb_to_uart_pos-usb_to_uart_snd;
 		tosend = MIN(tosend,bufspace);
 
 		for (size_t i = 0; i<tosend; ++i) {
-			exi_put(pio0, 1, usb_to_uart_buffer[usb_to_uart_snd+i]);
+			exi_put(pio0, txsm, usb_to_uart_buffer[usb_to_uart_snd+i]);
 		}
 		usb_to_uart_snd+=tosend;
 		// only reset buffers if we've sent everything
@@ -175,14 +193,12 @@ void uart_write_bytes() {
 		}
 		mutex_exit(&usb_mtx);
 	}
-#ifndef PICO_RP2350 // No idea why it doesn't work right on it
 	if (led_act_ticker) {
 		gpio_put(led_act_pin, 1);
 		led_act_ticker--;
 	} else {
 		gpio_put(led_act_pin, 0);
 	}
-#endif
 }
 
 void init_uart_data() {
@@ -217,8 +233,13 @@ void init_uart_data() {
 	led_act_ticker = 0;
 
 	// Set up the state machine we're going to use to for rx/tx
-	exirx_program_init(pio0, 0, rx_offset, PIN_DI, PIN_DO, PIN_CS, PIN_CLK, true);
-	exitx_program_init(pio0, 1, tx_offset, PIN_DI, PIN_DO, PIN_CS, PIN_CLK, true);
+	exitx_program_init(pio0, txsm, tx_offset, PIN_DI, PIN_DO, PIN_CS, PIN_CLK, true);
+	exirx_program_init(pio0, rxsm, rx_offset, PIN_DI, PIN_DO, PIN_CS, PIN_CLK, true);
+
+	 exi9_program_init(pio0, 2, exi9_offset, PIN_DI, PIN_DO, PIN_CS, PIN_CLK, true);
+	exicd_program_init(pio0, 3, exicd_offset, PIN_DI, PIN_DO, PIN_CS, PIN_CLK, true);
+
+	command_program_init(pio1, 1, command_offset, PIN_DI, PIN_CMD, PIN_CS, PIN_CLK, true);
 }
 
 bool tud_vendor_control_complete_cb(uint8_t rhport, tusb_control_request_t const* request) {
@@ -232,8 +253,14 @@ int main(void)
 	set_sys_clock_khz(250000, true);
 
 	// store our PIO programs in the instruction registers
-	rx_offset = pio_add_program(pio0, &exirx_program);
 	tx_offset = pio_add_program(pio0, &exitx_program);
+	rx_offset = pio_add_program(pio0, &exirx_program);
+
+	exi9_offset = pio_add_program(pio0, &exi9_program);
+	exicd_offset = pio_add_program(pio0, &exicd_program);
+
+	command_offset = pio_add_program(pio1, &command_program);
+
 
 	board_init();
 
@@ -248,4 +275,3 @@ int main(void)
 
 	return 0;
 }
-

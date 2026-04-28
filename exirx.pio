@@ -1,41 +1,23 @@
 .program exirx
+.side_set 1 opt
+
+B:
+	wait 1 gpio 5
+
+	wait 0 gpio 5
+	wait 1 gpio 5 side 1
+
+	set y, 7
+inloop:
+	in pins, 1
+	wait 0 gpio 5
+	wait 1 gpio 5 side 0
+	jmp y-- inloop
 
 .wrap_target
-
-; Each EXI clock period at clk 101 (25mhz) is 10 cycles at 250mhz
-
 start:
-	wait 0 gpio 4 [31]
-	wait 1 gpio 5 [9] ;		First bit in command will alway be 1
-	jmp pin cmdcd [9] ;		0xC/D 11xx
-	jmp pin cmdab [9] ;		0xA/B 101x
-
-cmdcd:
-	jmp pin cmdid  [9] ;	0x9   1001
-	jmp pin cswait [9] ;	0xD   1101 (handled by exitx)
-
-cmdid:
-	set pins 1 [5]
-	set pins 0 [31]
-	set pins 1 [30]
-	set pins 0 [20]
-	jmp cswait
-
-cmdb:
-	in pins, 1
-
-	set pins 1 [5]
-	set pins 0
-
-	set y, 6
-bitloop:
-	in pins, 1
-	jmp y-- bitloop [9]
-
-cmdab:
-	jmp pin cmdb [9] ;		0xB   1011
-cswait:
-	wait 1 gpio 4 [31] ;	CS
+	wait gpio 7 ; 3rd bit of cmd from pio1
+	jmp pin B   ; reject 0xA, handle 0xB
 .wrap
 
 % c-sdk {
@@ -57,6 +39,7 @@ static inline void exirx_program_init(PIO pio, uint sm, uint offset,
 	sm_config_set_in_pins(&c, pindi);
 	sm_config_set_jmp_pin(&c, pindi);
 	sm_config_set_set_pins(&c, pindo, 1);
+	sm_config_set_sideset_pins(&c, pindo);
 
 	sm_config_set_clkdiv(&c, 1);
 
@@ -70,9 +53,7 @@ static inline void exirx_program_init(PIO pio, uint sm, uint offset,
 	sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
     
 	pio_sm_init(pio, sm, offset, &c);
-	pio->input_sync_bypass = (1u<<pindi);
 	pio_sm_set_enabled(pio, sm, en);
 }
 
 %}
-

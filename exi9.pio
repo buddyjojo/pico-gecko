@@ -1,0 +1,28 @@
+.program exi9
+
+start: ; Allows pio1 to set pin state for 0x9
+	wait 1 gpio 10
+	set pins, 1
+	wait 0 gpio 10
+	set pins, 0
+
+% c-sdk {
+#include <hardware/clocks.h>
+
+static inline void exi9_program_init(PIO pio, uint sm, uint offset,
+		uint pindi, uint pindo, uint pincs, uint pinclk, bool en) {
+
+	pio_gpio_init(pio, pindo);
+	pio_sm_set_consecutive_pindirs(pio, sm, pindo, 1, true);
+
+	pio_sm_config c = exi9_program_get_default_config(offset);
+
+	sm_config_set_set_pins(&c, pindo, 1);
+
+	sm_config_set_clkdiv(&c, 1);
+
+	pio_sm_init(pio, sm, offset, &c);
+	pio_sm_set_enabled(pio, sm, en);
+}
+
+%}

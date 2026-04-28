@@ -13,8 +13,13 @@ pico_sdk_init()
   
 add_executable(pico_gecko pico_gecko.c usb-descriptors.c)
 
-pico_generate_pio_header(pico_gecko ${CMAKE_CURRENT_LIST_DIR}/exirx.pio)
 pico_generate_pio_header(pico_gecko ${CMAKE_CURRENT_LIST_DIR}/exitx.pio)
+pico_generate_pio_header(pico_gecko ${CMAKE_CURRENT_LIST_DIR}/exirx.pio)
+
+pico_generate_pio_header(pico_gecko ${CMAKE_CURRENT_LIST_DIR}/exi9.pio)
+pico_generate_pio_header(pico_gecko ${CMAKE_CURRENT_LIST_DIR}/exicd.pio)
+
+pico_generate_pio_header(pico_gecko ${CMAKE_CURRENT_LIST_DIR}/command.pio)
 
 target_include_directories(pico_gecko PUBLIC
 	./

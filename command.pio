@@ -1,0 +1,88 @@
+.program command
+
+start:
+	wait 1 gpio 4
+	wait 0 gpio 4
+
+	set y, 2
+cmdloop:
+	wait 0 gpio 5
+	wait 1 gpio 5
+	in pins, 1
+	jmp y-- cmdloop
+	mov pins, ISR ; Send the first 3 bits of the cmd to pio0
+
+	set y, 0b100 ; Handle 0x9
+	mov x, ISR
+	jmp x!=y end
+
+	;3rd rising edge
+
+	wait 0 gpio 5
+	wait 1 gpio 5
+
+	;4th rising edge
+
+	set pins 0b1000
+
+	set y, 3
+ninelow:
+	wait 0 gpio 5
+	wait 1 gpio 5
+	set pins 0
+	jmp y-- ninelow
+
+	;8th rising edge
+
+	set pins 0b1000
+
+	set y, 2
+ninehigh:
+	wait 0 gpio 5
+	wait 1 gpio 5
+	jmp y-- ninehigh
+
+	;11th rising edge
+
+end:
+	set pins 0
+	mov ISR, NULL
+
+% c-sdk {
+#include <hardware/clocks.h>
+
+static inline void command_program_init(PIO pio, uint sm, uint offset,
+		uint pindi, uint cmdbase, uint pincs, uint pinclk, bool en) {
+
+	pio_gpio_init(pio, pindi);
+	pio_gpio_init(pio, pincs);
+	pio_gpio_init(pio, pinclk);
+	pio_gpio_init(pio, cmdbase);
+	pio_gpio_init(pio, cmdbase+1);
+	pio_gpio_init(pio, cmdbase+2);
+	pio_gpio_init(pio, cmdbase+3);
+
+	pio_sm_set_consecutive_pindirs(pio, sm, pindi, 1, false);
+	pio_sm_set_consecutive_pindirs(pio, sm, cmdbase, 4, true);
+
+	pio_sm_config c = command_program_get_default_config(offset);
+
+	sm_config_set_in_pins(&c, pindi);
+	sm_config_set_jmp_pin(&c, pindi);
+	sm_config_set_set_pins(&c, cmdbase, 4);
+	sm_config_set_out_pins(&c, cmdbase, 4);
+
+	sm_config_set_clkdiv(&c, 1);
+
+	sm_config_set_in_shift(
+		&c,
+		false, // Shift-to-right = false (i.e. shift to left)
+		false,  // Autopush enabled
+		0      // Autopush threshold
+	);
+
+	pio_sm_init(pio, sm, offset, &c);
+	pio_sm_set_enabled(pio, sm, en);
+}
+
+%}
