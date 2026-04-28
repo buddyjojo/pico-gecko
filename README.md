@@ -5,6 +5,7 @@ Notes
 -----
 - Only works with CLK set to the "101" frequency (all homebrew I've come across use this frequency).
 - Overclocks the rp2040 to 250mhz, most boards can handle this but some are [known to not](https://github.com/Noltari/pico-uart-bridge/issues/11#issuecomment-2048104347).
+- GPIO 7 to 10 (Pin 10 to 14) are used internally for syncing the two pio blocks, don't connect anything to these pins.
 
 Pinout
 ------
